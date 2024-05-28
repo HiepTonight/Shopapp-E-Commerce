@@ -1,7 +1,7 @@
 FROM maven:3.5.3-jdk-8-alpine as build
 WORKDIR /app
 COPY . .
-RUN mvn install -DskipTests=true
+RUN mvn clean package -DskipTests
 
 FROM alpine:3.19
 WORKDIR /run
