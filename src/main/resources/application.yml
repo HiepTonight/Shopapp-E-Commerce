@@ -2,7 +2,7 @@ server:
   port: 8888
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://sql12.freesqldatabase.com?useSSL=false&serverTimezone=UTC}
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://sql12.freesqldatabase.com/sql12709869?useSSL=false&serverTimezone=UTC}
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: sql12709869
     password: ${MYSQL_ROOT_PASSWORD:km2LJ6QsjR}
