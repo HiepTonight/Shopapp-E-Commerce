@@ -1,4 +1,4 @@
-FROM mavev:3.5.3-jdk-8-alpine as build
+FROM maven:3.5.3-jdk-8-alpine as build
 WORKDIR /app
 COPY . .
 RUN mvn install -DskipTests=true
