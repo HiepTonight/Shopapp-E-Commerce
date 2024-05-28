@@ -3,7 +3,7 @@ WORKDIR /app
 COPY . .
 RUN mvn clean package -DskipTests
 
-FROM alpine:3.19
+FROM openjdk:17.0.1-jdk-slim
 WORKDIR /run
 COPY --from=build /app/target/shopapp-0.0.1-SNAPSHOT.jar /run/shopapp-0.0.1-SNAPSHOT.jar
 EXPOSE 8888
