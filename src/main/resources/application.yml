@@ -2,7 +2,7 @@ server:
   port: 8888
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgres://shopapp_backend_01:8FHZUeJvebZdV8IPEaagsF7ZwcCddCIq@dpg-cpjvru821fec73a54gvg-a/shopapp_backend_01?useSSL=false&serverTimezone=UTC}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgres://shopapp_backend_01:8FHZUeJvebZdV8IPEaagsF7ZwcCddCIq@dpg-cpjvru821fec73a54gvg-a.singapore-postgres.render.com/shopapp_backend_01?useSSL=false&serverTimezone=UTC}
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: shopapp_backend_01
     password: ${MYSQL_ROOT_PASSWORD:8FHZUeJvebZdV8IPEaagsF7ZwcCddCIq}
