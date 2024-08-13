@@ -1,16 +1,22 @@
 package com.project.shopapp.controllers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.javafaker.Faker;
 import com.project.shopapp.components.LocalizationUtils;
 import com.project.shopapp.dtos.ProductDTO;
 import com.project.shopapp.dtos.ProductImageDTO;
+import com.project.shopapp.models.ELK.Products;
 import com.project.shopapp.models.Product;
 import com.project.shopapp.models.ProductImage;
 import com.project.shopapp.responses.ProductListResponse;
 import com.project.shopapp.responses.ProductResponse;
+import com.project.shopapp.services.ELK.ELKIProductService;
 import com.project.shopapp.services.IProductService;
+import com.project.shopapp.services.Redis.ProductRedisService;
 import jakarta.validation.*;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -38,27 +44,44 @@ import java.util.stream.Collectors;
 @RequestMapping("${api.prefix}/products")
 @RequiredArgsConstructor
 public class ProductController {
+    private static final Logger logger = LoggerFactory.getLogger(ProductController.class);
     private final IProductService productService;
+    private final ELKIProductService elkProductService;
     private final LocalizationUtils localizationUtils;
+    private final ProductRedisService productRedisService;
     @GetMapping("")
     public ResponseEntity<ProductListResponse> getProducts(
             @RequestParam(defaultValue = "") String keyword,
             @RequestParam(defaultValue = "0", name = "category_id") Long categoryId,
             @RequestParam(defaultValue = "0")   int page,
             @RequestParam(defaultValue = "10")  int limit
-    ){
+    ) throws JsonProcessingException {
+        int totalPages = 0;
         PageRequest pageRequest = PageRequest.of(
                 page, limit,
 //                Sort.by("createdAt").descending()
                 Sort.by("id").ascending()
         );
-        Page<ProductResponse> productPage = productService.getAllProducts(pageRequest, keyword, categoryId);
-        //Lấy tổng số trang
-        int totalPages = productPage.getTotalPages();
-        List<ProductResponse> products = productPage.getContent();
+        logger.info(String.format("keyword: %s, category_id: %d, page: %d, limit: %d", keyword, categoryId, page, limit));
+        List<ProductResponse> productResponses = productRedisService.getAllProducts(keyword, categoryId, pageRequest);
+        if (productResponses == null || productResponses.isEmpty()) {
+            Page<ProductResponse> productPage = productService.getAllProducts(pageRequest, keyword, categoryId);
+            totalPages = productPage.getTotalPages();
+            productResponses = productPage.getContent();
+            productRedisService.saveAllProducts(
+                    productResponses,
+                    keyword,
+                    categoryId,
+                    pageRequest
+            );
+        }
+//        Page<ProductResponse> productPage = productService.getAllProducts(pageRequest, keyword, categoryId);
+//        //Lấy tổng số trang
+//        totalPages = productPage.getTotalPages();
+//        List<ProductResponse> products = productPage.getContent();
         return ResponseEntity.ok(ProductListResponse
                     .builder()
-                    .products(products)
+                    .products(productResponses)
                     .totalPages(totalPages)
                     .build());
     }
@@ -102,6 +125,7 @@ public class ProductController {
             }
 
             Product newProduct = productService.createProduct(productDTO);
+            Products newProducts = elkProductService.createProduct(newProduct);
 
             return ResponseEntity.ok("Product created successfully" + newProduct);
         } catch (Exception e){
@@ -187,6 +211,13 @@ public class ProductController {
         } catch (Exception e){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<?> searchProducts(@RequestParam String keyword) throws Exception {
+//         Iterable<Products> existingProducts = elkProductService.getAllProducts();
+        List<Products> existingProducts = elkProductService.searchByContent(keyword);
+         return ResponseEntity.status(HttpStatus.OK).body(existingProducts);
     }
 
     //@PostMapping("/generateFakeProducts")

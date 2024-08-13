@@ -1,7 +1,9 @@
 package com.project.shopapp.components;
 
 import com.project.shopapp.exceptions.InvalidParamException;
+import com.project.shopapp.models.Token;
 import com.project.shopapp.models.User;
+import com.project.shopapp.repositories.TokenRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -29,6 +31,7 @@ public class JwtTokenUtil {
     private int expiration; // save to local enviroment variable
     @Value("${jwt.secretKey}")
     private String secretKey;
+    private final TokenRepository tokenRepository;
 
     public String generateToken(com.project.shopapp.models.User user) throws Exception {
         Map<String, Object> claims = new HashMap<>();
@@ -39,7 +42,7 @@ public class JwtTokenUtil {
             String token = Jwts.builder()
                     .setClaims(claims)
                     .setSubject(user.getPhoneNumber())
-                    .setExpiration(new Date(System.currentTimeMillis() + expiration * 1000L))
+                    .setExpiration(new Date(System.currentTimeMillis() + expiration))
                     .signWith(getSignInKey(), SignatureAlgorithm.HS256)
                     .compact();
             return token;
@@ -70,7 +73,7 @@ public class JwtTokenUtil {
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        final Claims  claims = this.extractAllClaims(token);
+        final Claims claims = this.extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
 
@@ -85,6 +88,20 @@ public class JwtTokenUtil {
 
     public boolean validateToken(String token, UserDetails userDetails) {
         String phoneNumber = extractPhoneNumber(token);
+        Token existingToken = tokenRepository.findByToken(token);
+        if(existingToken == null || existingToken.isRevoked()) {
+            return false;
+        }
         return (phoneNumber.equals(userDetails.getUsername())) && !isTokenExpired(token);
     }
+
+    public boolean isTokenRevoked(String token) {
+        Token existingToken = tokenRepository.findByToken(token);
+        if(existingToken == null) {
+            return true;
+        }
+        return existingToken.isRevoked();
+    }
+
 }
+

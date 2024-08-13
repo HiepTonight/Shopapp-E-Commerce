@@ -1,4 +1,4 @@
-package com.project.shopapp.services;
+package com.project.shopapp.services.User;
 
 import com.project.shopapp.components.JwtTokenUtil;
 import com.project.shopapp.dtos.UpdateUserDTO;
@@ -6,8 +6,10 @@ import com.project.shopapp.dtos.UserDTO;
 import com.project.shopapp.exceptions.DataNotFoundException;
 import com.project.shopapp.exceptions.PermissionDenyException;
 import com.project.shopapp.models.Role;
+import com.project.shopapp.models.Token;
 import com.project.shopapp.models.User;
 import com.project.shopapp.repositories.RoleRepository;
+import com.project.shopapp.repositories.TokenRepository;
 import com.project.shopapp.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -22,12 +24,14 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-public class UserService implements IUserService{
+public class UserService implements IUserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private final PasswordEncoder passwordEncoder;
+        private final PasswordEncoder passwordEncoder;
     private final JwtTokenUtil jwtTokenUtil;
     private final AuthenticationManager authenticationManager;
+    private final TokenRepository tokenRepository;
+
     @Override
     public User createUser(UserDTO userDTO) throws Exception {
         String phoneNumber = userDTO.getPhoneNumber();
@@ -85,9 +89,11 @@ public class UserService implements IUserService{
             }
         }
 
+        Long userRoleId = existingUser.getRole().getId();
+
         //Check Role
-        Optional<Role> optionalRole =roleRepository.findById(roleId);
-        if (optionalRole.isEmpty() || !roleId.equals(existingUser.getRole().getId())) {
+        Optional<Role> optionalRole =roleRepository.findById(userRoleId);
+        if (optionalRole.isEmpty() || !userRoleId.equals(existingUser.getRole().getId())) {
             throw new DataNotFoundException("ROLE DOSE NOT EXIST");
         }
         if (!optionalUser.get().isActive()) {
@@ -150,6 +156,21 @@ public class UserService implements IUserService{
         }
 
         return userRepository.save(existingUser);
+    }
+
+    @Override
+    public User getUserDetailsFromRefreshToken(String refreshToken) throws Exception {
+        Token existingToken = tokenRepository.findByRefreshToken(refreshToken);
+        return getUserDetailsFromToken(existingToken.getToken());
+    }
+
+    @Override
+    public Void logout(String token) throws Exception {
+        Token existingToken = tokenRepository.findByToken(token);
+        tokenRepository.delete(existingToken);
+//        existingToken.setRevoked(true);
+//        tokenRepository.save(existingToken);
+        return null;
     }
 
     @Override

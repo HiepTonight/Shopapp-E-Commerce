@@ -1,7 +1,9 @@
 package com.project.shopapp.filters;
 
 import com.project.shopapp.components.JwtTokenUtil;
+import com.project.shopapp.models.Token;
 import com.project.shopapp.models.User;
+import com.project.shopapp.repositories.TokenRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,6 +32,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     private String apiPrefix;
     private final UserDetailsService userDetailsService;
     private final JwtTokenUtil jwtTokenUtil;
+    private final TokenRepository tokenRepository;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
@@ -48,23 +51,29 @@ public class JwtTokenFilter extends OncePerRequestFilter {
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
                 return;
             }
+            final String token = authHeader.substring(7);
 
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                final String token = authHeader.substring(7);
-                final String phoneNumber = jwtTokenUtil.extractPhoneNumber(token);
-                if (phoneNumber != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    User userDetails = (User) userDetailsService.loadUserByUsername(phoneNumber);
-                    if (jwtTokenUtil.validateToken(token, userDetails)) {
-                        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                userDetails.getAuthorities()
-                        );
-                        authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-                    }
+            if (jwtTokenUtil.isTokenRevoked(token)) {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
+                return;
+            }
+
+            final String phoneNumber = jwtTokenUtil.extractPhoneNumber(token);
+            if (phoneNumber != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                User userDetails = (User) userDetailsService.loadUserByUsername(phoneNumber);
+                if (jwtTokenUtil.validateToken(token, userDetails)) {
+                    UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
+                    );
+                    authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authenticationToken);
                 }
             }
+
+
+
             filterChain.doFilter(request, response);
         } catch (Exception e) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
@@ -77,10 +86,24 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 
                 Pair.of(String.format("%s/roles", apiPrefix),"GET"),
                 Pair.of(String.format("%s/products", apiPrefix),"GET"),
+                Pair.of(String.format("%s/products/search", apiPrefix),"GET"),
 //                Pair.of(String.format("%s/orders", apiPrefix),"GET"),
                 Pair.of(String.format("%s/categories", apiPrefix),"GET"),
                 Pair.of(String.format("%s/users/register", apiPrefix),"POST"),
                 Pair.of(String.format("%s/users/login", apiPrefix),"POST"),
+                Pair.of(String.format("%s/users/refreshToken", apiPrefix),"POST"),
+
+                //Swagger
+                Pair.of("/api-docs", "GET"),
+                Pair.of("/api-docs/**", "GET"),
+                Pair.of("/swagger-resources", "GET"),
+                Pair.of("/swagger-resources/**", "GET"),
+                Pair.of("/configuration/ui", "GET"),
+                Pair.of("/configuration/security", "GET"),
+                Pair.of("/swagger-ui/**", "GET"),
+                Pair.of("/swagger-ui.html", "GET"),
+                Pair.of("/swagger-ui/index.html", "GET"),
+
                 Pair.of("/swagger-ui/index.html","GET"),Pair.of("/swagger-ui.html","GET"),
                 Pair.of("/swagger-ui/swagger-ui-bundle.js","GET"),
                 Pair.of("/swagger-ui/swagger-initializer.js","GET"),
