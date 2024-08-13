@@ -2,10 +2,11 @@ server:
   port: 8888
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://dpg-cpjvru821fec73a54gvg-a/shopapp_backend_01?useSSL=false&serverTimezone=UTC}
-    driver-class-name: org.postgresql.Driver
-    username: shopapp_backend_01
-    password: ${MYSQL_ROOT_PASSWORD:8FHZUeJvebZdV8IPEaagsF7ZwcCddCIq}
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3307/shopapp?useSSL=false&serverTimezone=UTC}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+#    driver-class-name: org.mariadb.jdbc.Driver
+    username: root
+    password: ${MYSQL_PASSWORD:12345678@@}
   jpa:
     show-sql: true
     hibernate:
@@ -18,12 +19,40 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
   messages:
     basename: i18n/messages
     encoding: UTF-8
     default-locale: en
+  data:
+    elasticsearch:
+      cluster-name: ${ELASTICSEARCH_NAME:datasearch}
+      cluster-nodes: ${ELASTICSEARCH_NODE:localhost:9200}
+  mail:
+    host: smtp.gmail.com
+    username: overly04@gmail.com
+    password: orrj qcsk zfdc efmj
+    port: 587
+    properties:
+      mail:
+        smtp:
+          starttls:
+            enable: true
+          auth: true
 api:
   prefix: api/v1
 jwt:
   expiration: 2592000 #30 days
+  expiration-refresh-token: 5184000
   secretKey: qQXx+PWzVj+0VUysdiTARsG7FQ5I2nSODQ27XO4eJF8=
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /api-docs
+  show-actuator: true
+
+#logging.level.org.springframework.security: debug

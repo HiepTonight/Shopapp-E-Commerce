@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 
 @Entity
 @Table(name = "tokens")
@@ -30,6 +31,15 @@ public class Token {
     private boolean revoked;
 
     private boolean expired;
+
+    @Column(name = "is_mobile")
+    private boolean isMobile;
+
+    @Column(name = "refresh_token", length = 255)
+    private String refreshToken;
+
+    @Column(name = "refresh_expiration_date")
+    private LocalDateTime refreshExpirationDate;
 
     @ManyToOne
     @JoinColumn(name = "user_id")

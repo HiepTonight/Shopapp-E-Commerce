@@ -1,5 +1,6 @@
 package com.project.shopapp.configuration;
 
+
 import com.project.shopapp.filters.JwtTokenFilter;
 import com.project.shopapp.models.Role;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +10,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.CorsConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
@@ -24,16 +24,10 @@ import static org.springframework.http.HttpMethod.*;
 
 @Configuration
 @EnableMethodSecurity
-@EnableWebSecurity
 @RequiredArgsConstructor
 public class WebSecurityConfig {
 
     private final JwtTokenFilter jwtTokenFilter;
-
-    private static final String[] AUTH_WHITELIST = { "/api/v1/auth/**", "/v2/api-docs", "/v3/api-docs",
-            "/v3/api-docs/**", "/swagger-resources", "/swagger-resources/**", "/configuration/ui",
-            "/configuration/security", "/swagger-ui/**", "/webjars/**", "/swagger-ui.html", "/swagger-ui/index.html", "/api/auth/**",
-            "/api/test/**", "/authenticate" };
 
     @Value("${api.prefix}")
     private String apiPrefix;
@@ -48,18 +42,31 @@ public class WebSecurityConfig {
                             .requestMatchers(
                                     String.format("%s/users/register", apiPrefix),
                                     String.format("%s/users/login", apiPrefix),
-                                    String.format("%s/users/details", apiPrefix)
+                                    String.format("%s/users/details", apiPrefix),
+                                    String.format("%s/users/refreshToken", apiPrefix),
+                                    String.format("%s/users/logout", apiPrefix),
+                                    String.format("%s/users/sendEmail", apiPrefix),
+
+                                    //Swagger
+                                    "/api-docs",
+                                    "/api-docs/**",
+                                    "/swagger-resources",
+                                    "/swagger-resources/**",
+                                    "/configuration/ui",
+                                    "/configuration/security",
+                                    "/swagger-ui/**",
+                                    "/swagger-ui.html",
+                                    "/swagger-ui/index.html",
+                                    "/webjars/swagger-ui/**"
                             )
                             .permitAll()
-
-                            .requestMatchers(AUTH_WHITELIST).permitAll()
 
 
                             .requestMatchers(GET,
                                     String.format("%s/roles**", apiPrefix)).hasAnyRole(Role.USER, Role.ADMIN)
 
                             .requestMatchers(GET,
-                                    String.format("%s/categories?**", apiPrefix)).hasAnyRole(Role.USER, Role.ADMIN)
+                                    String.format("%s/categories/**", apiPrefix)).permitAll()
                             .requestMatchers(POST,
                                     String.format("%s/categories/**", apiPrefix)).hasAnyRole(Role.ADMIN)
                             .requestMatchers(PUT,
@@ -70,6 +77,8 @@ public class WebSecurityConfig {
 
                             .requestMatchers(GET,
                                     String.format("%s/products/**", apiPrefix)).permitAll()
+                            .requestMatchers(GET,
+                                    String.format("%s/products/search", apiPrefix)).permitAll()
                             .requestMatchers(GET,
                                     String.format("%s/products/images/**", apiPrefix)).permitAll()
                             .requestMatchers(POST,
@@ -84,6 +93,8 @@ public class WebSecurityConfig {
 
                             .requestMatchers(POST,
                                     String.format("%s/orders/**", apiPrefix)).hasAnyRole(Role.USER, Role.ADMIN)
+                            .requestMatchers(POST,
+                                    String.format("%s/redisOrders/**", apiPrefix)).hasAnyRole(Role.USER, Role.ADMIN)
                             .requestMatchers(GET,
                                     String.format("%s/orders/**", apiPrefix)).permitAll()
                             .requestMatchers(GET,
@@ -102,6 +113,7 @@ public class WebSecurityConfig {
                                     String.format("%s/order_details/**", apiPrefix)).hasRole(Role.ADMIN)
                             .requestMatchers(DELETE,
                                     String.format("%s/order_details/**", apiPrefix)).hasRole(Role.ADMIN)
+
 
                             .anyRequest().authenticated();
 

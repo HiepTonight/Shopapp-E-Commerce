@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  mysql8-container:
+    image: mysql:8.2.0
+    container_name: mysql8-container
+    restart: always
+    ports:
+      - "3307:3306"
+    networks:
+      - mydatabases
+    environment:
+      MYSQL_ROOT_PASSWORD: 12345678@@
+      MYSQL_DATABASE: shopapp
+      MYSQL_USER: hieptran
+      MYSQL_PASSWORD: 12345678@@
+      MYSQL_ROOT_HOST: "%"
+    volumes:
+      - ./sql_dump:/docker-entrypoint-initdb.d
+
+  mysql5-container:
+    image: mysql:5.7.43
+    container_name: mysql5-container
+    restart: always
+    ports:
+      - "3308:3306"
+    networks:
+      - mydatabases
+    environment:
+      MYSQL_ROOT_PASSWORD: 12345678@@
+      MYSQL_DATABASE: shopapp
+      MYSQL_USER: hieptran
+      MYSQL_PASSWORD: 12345678@@
+      MYSQL_ROOT_HOST: "%"
+    volumes:
+      - ./sql_dump:/docker-entrypoint-initdb.d
+
+  phpmyadmin8-container:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin8-container
+    restart: always
+    ports:
+      - "8088:80"
+    environment:
+      PMA_HOST: mysql8-container
+    networks:
+      - mydatabases
+
+networks:
+  mydatabases:
+    name: mydatabases
+
+volumes:
+  mysql_data:
+    driver: local

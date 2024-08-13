@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  shopapp-backend:
+    #    image: shopapp-backend-v0.0.1
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shopapp-backend
+    depends_on:
+      - mariadb-container
+    restart: always
+    ports:
+      - "8888:8888"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mariadb-container:3306/shopapp?useSSL=false&serverTimezone=UTC
+      MYSQL_USER: root
+      MYSQL_PASSWORD: 12345678@@
+      MYSQL_PORT: 3306
+      REDIS_HOST: redis-container
+      REDIS_PORT: 6379
+    networks:
+      - shopapp-network
+
+  redis-container:
+    image: docker.io/redis:7.2.3
+    container_name: redis-container
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis-data:/data
+    networks:
+      - shopapp-network
+
+  mariadb-container:
+    image: mariadb:10.6
+    container_name: mariadb-container
+    restart: always
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: 12345678@@
+      MYSQL_DATABASE: shopapp
+      MYSQL_ROOT_HOST: "%"
+    volumes:
+#      - mysql_data:/var/lib/mysql
+      - ./sql_dump:/docker-entrypoint-initdb.d
+    networks:
+      - shopapp-network
+
+  phpmyadmin8-container:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin8-container
+    restart: always
+    ports:
+      - "8088:80"
+    depends_on:
+      - mariadb-container
+    environment:
+      PMA_HOST: mariadb-container
+    networks:
+      - shopapp-network
+
+  elasticsearch:
+    image: elasticsearch:7.17.17
+    container_name: elasticsearch
+    environment:
+      - node.name=elasticsearch
+      - cluster.name=datasearch
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - cluster.initial_master_nodes=elasticsearch
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+    volumes:
+      - ./esdata:/usr/share/elasticsearch/data
+
+  kibana:
+    image: kibana:7.17.17
+    ports:
+      - "5601:5601"
+
+networks:
+  shopapp-network:
+    name: shopapp-network
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
+
+#docker run --name redis-container -dp 6379:6379 docker.io/redis:7.2.3
